@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.antigravity.browser.core.BrowserViewModel
 import com.antigravity.browser.core.ExtensionType
+import com.antigravity.browser.data.db.ApiKeyEntity
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,7 +25,7 @@ fun SettingsScreen(
     val apiKeyManager = viewModel.apiKeyManager
     val scope = rememberCoroutineScope()
     
-    var apiKeys by remember { mutableStateOf<List<String>>(emptyList()) }
+    var apiKeys by remember { mutableStateOf<List<ApiKeyEntity>>(emptyList()) }
     var showAddKeyDialog by remember { mutableStateOf(false) }
     var newKey by remember { mutableStateOf("") }
     
@@ -103,15 +104,19 @@ fun SettingsScreen(
                 
                 Card {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        stats.forEach { (key, value) ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(key)
-                                Text(value.toString(), fontWeight = FontWeight.Bold)
+                        if (stats.isNullOrEmpty()) {
+                            Text("No usage data available")
+                        } else {
+                            stats?.forEach { (key, value) ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(key)
+                                    Text(value.toString(), fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }
@@ -142,11 +147,11 @@ fun SettingsScreen(
                 }
             }
 
-            itemsIndexed(apiKeys) { index, key ->
+            itemsIndexed(apiKeys) { index, entity ->
                 ApiKeyCard(
                     index = index,
-                    key = key,
-                    isActive = index == 0, // Simplified active check
+                    key = entity.key,
+                    isActive = entity.isActive,
                     onDelete = {
                         scope.launch {
                             apiKeyManager.removeKey(index)
@@ -155,6 +160,10 @@ fun SettingsScreen(
                     },
                     onActivate = {
                         viewModel.setManualKey(index)
+                        // Refresh keys to update active status
+                        scope.launch {
+                            apiKeys = apiKeyManager.getAllKeys()
+                        }
                     }
                 )
             }
