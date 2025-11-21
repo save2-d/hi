@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.antigravity.browser.core.BrowserViewModel
 import com.antigravity.browser.core.ExtensionType
 import com.antigravity.browser.data.ai.ApiKeyEntity
+import com.antigravity.browser.data.ai.UsageStats
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -102,24 +103,17 @@ fun SettingsScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                val stats by apiKeyManager.usageStats.collectAsState(initial = emptyMap())
+                val stats by apiKeyManager.usageStats.collectAsState(initial = null)
                 
                 Card {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        if (stats.isNullOrEmpty()) {
+                        if (stats == null) {
                             Text("No usage data available")
                         } else {
-                            stats?.forEach { (key, value) ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(key)
-                                    Text(value.toString(), fontWeight = FontWeight.Bold)
-                                }
-                            }
+                            val s = stats!!
+                            StatRow("Requests (Minute)", "${s.requestsThisMinute} / ${s.rpmLimit}")
+                            StatRow("Requests (Day)", "${s.requestsToday} / ${s.rpdLimit}")
+                            StatRow("Tokens (Minute)", "${s.tokensThisMinute} / ${s.tpmLimit}")
                         }
                     }
                 }
@@ -235,6 +229,19 @@ fun SettingsScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+fun StatRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label)
+        Text(value, fontWeight = FontWeight.Bold)
     }
 }
 
