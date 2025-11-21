@@ -47,7 +47,7 @@ android {
     }
     
     aaptOptions {
-        noCompress = "json,js,css,html,png,xpi"
+        noCompress.addAll(listOf("json", "js", "css", "html", "png", "xpi"))
     }
 }
 
