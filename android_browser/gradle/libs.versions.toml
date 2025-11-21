@@ -14,6 +14,7 @@ okhttp = "4.12.0"
 room = "2.6.1"
 coil = "2.5.0"
 coroutines = "1.7.3"
+material = "1.11.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -30,6 +31,9 @@ androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+
+# Material Components
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
 # GeckoView
 geckoview = { group = "org.mozilla.geckoview", name = "geckoview", version.ref = "geckoview" }
