@@ -42,4 +42,10 @@ class ExtensionManager(private val context: Context, private val runtime: GeckoR
         // Example of how we would send it if we had a stored port:
         // activePort?.postMessage(JSONObject().put("speed", speed))
     }
+    
+    fun toggleExtension(extension: ExtensionType, enable: Boolean) {
+        Log.d("ExtensionManager", "Toggle extension: $extension, enable: $enable")
+        // In a full implementation, we would enable/disable extensions via the WebExtensionController
+        // runtime.webExtensionController.disable(extensionId) or enable(extensionId)
+    }
 }
