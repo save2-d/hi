@@ -13,8 +13,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.antigravity.browser.core.BrowserViewModel
 import com.antigravity.browser.core.ExtensionType
-import com.antigravity.browser.data.db.ApiKeyEntity
+import com.antigravity.browser.data.ai.ApiKeyEntity
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

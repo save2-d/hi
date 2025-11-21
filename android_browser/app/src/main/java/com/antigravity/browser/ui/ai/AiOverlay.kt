@@ -1,38 +1,28 @@
 package com.antigravity.browser.ui.ai
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.antigravity.browser.core.BrowserViewModel
 import com.antigravity.browser.core.ChatMessage
 
@@ -59,7 +49,7 @@ fun AiOverlay(
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) {
                 Icon(
-                    imageVector = Icons.Default.AutoAwesome,
+                    imageVector = Icons.Default.Star,
                     contentDescription = "AI Assistant",
                     modifier = Modifier.size(32.dp)
                 )
@@ -97,7 +87,7 @@ fun AiOverlay(
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    imageVector = Icons.Default.AutoAwesome,
+                                    imageVector = Icons.Default.Star,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary
                                 )
@@ -215,7 +205,8 @@ fun AiOverlay(
 @Composable
 fun ChatBubble(message: ChatMessage) {
     val isUser = message.isUser
-    val alignment = if (isUser) Alignment.End else Alignment.Start
+    // Use CenterEnd/CenterStart for Box alignment (2D), not End/Start (1D)
+    val alignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
     val containerColor = if (isUser) 
         MaterialTheme.colorScheme.primaryContainer 
     else 
@@ -256,7 +247,7 @@ fun WelcomeMessage() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
-            imageVector = Icons.Default.AutoAwesome,
+            imageVector = Icons.Default.Star,
             contentDescription = null,
             modifier = Modifier.size(48.dp),
             tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
