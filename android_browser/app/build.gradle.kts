@@ -48,6 +48,7 @@ android {
     
     aaptOptions {
         noCompress.addAll(listOf("json", "js", "css", "html", "png", "xpi"))
+        ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~"
     }
 }
 
