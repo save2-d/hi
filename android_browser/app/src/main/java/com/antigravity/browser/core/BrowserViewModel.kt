@@ -68,6 +68,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     init {
         extensionManager.installExtensions()
         createNewTab()
+        Log.d(TAG, "Loading initial URL: ${_currentUrl.value}")
         loadUrl(_currentUrl.value)
         refreshActiveKeyIndex()
         // Observe usage stats
@@ -205,8 +206,12 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     fun loadUrl(url: String) {
         _currentUrl.value = url
         val session = _activeSession.value
+        Log.d(TAG, "loadUrl called: url=$url, session=$session")
         if (session != null) {
             session.loadUri(url)
+            Log.d(TAG, "URL loaded into session: $url")
+        } else {
+            Log.e(TAG, "No active session to load URL into!")
         }
     }
 
@@ -225,6 +230,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     fun createNewTab() {
         val newSession = browserEngine.createSession()
         newSession.navigationDelegate = navigationDelegate
+        Log.d(TAG, "Created new session: $newSession")
         _tabs.value = _tabs.value + newSession
         switchToSession(newSession)
     }

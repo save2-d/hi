@@ -103,8 +103,10 @@ fun BrowserScreen(
                         },
                         update = { geckoView ->
                             val session = viewModel.activeSession.value
+                            android.util.Log.d("BrowserScreen", "AndroidView update: session=$session, geckoView.session=${geckoView.session}")
                             if (session != null && geckoView.session != session) {
                                 geckoView.setSession(session)
+                                android.util.Log.d("BrowserScreen", "Set session on GeckoView: $session")
                             }
                         },
                         modifier = Modifier.fillMaxSize()
