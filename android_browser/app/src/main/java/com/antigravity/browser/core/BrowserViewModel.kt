@@ -16,7 +16,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     private val browserApp = application as BrowserApp
     private val apiKeyManager = browserApp.apiKeyManager
     private val browserEngine = BrowserEngine(application)
-    private val extensionManager = ExtensionManager(application, browserEngine.getRuntime())
+    private val extensionManager = ExtensionManager(application, browserEngine.runtime)
     
     // State
     private val _currentUrl = MutableStateFlow("https://www.google.com")

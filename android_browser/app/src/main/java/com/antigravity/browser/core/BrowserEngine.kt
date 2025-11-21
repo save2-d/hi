@@ -7,7 +7,7 @@ import org.mozilla.geckoview.GeckoView
 
 class BrowserEngine(private val context: Context) {
 
-    private val runtime: GeckoRuntime by lazy {
+    val runtime: GeckoRuntime by lazy {
         GeckoRuntime.create(context)
     }
 
@@ -16,6 +16,4 @@ class BrowserEngine(private val context: Context) {
         session.open(runtime)
         return session
     }
-
-    fun getRuntime(): GeckoRuntime = runtime
 }
