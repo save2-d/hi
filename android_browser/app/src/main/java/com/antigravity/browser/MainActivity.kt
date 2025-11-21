@@ -1,16 +1,20 @@
 package com.antigravity.browser
 
 import android.os.Bundle
-import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
 import com.antigravity.browser.core.BrowserViewModel
-import org.mozilla.geckoview.GeckoView
+import com.antigravity.browser.ui.browser.BrowserScreen
+import com.antigravity.browser.ui.theme.AndroidBrowserTheme
 
 class MainActivity : ComponentActivity() {
     
     private lateinit var viewModel: BrowserViewModel
-    private lateinit var geckoView: GeckoView
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -18,20 +22,23 @@ class MainActivity : ComponentActivity() {
         // Initialize ViewModel
         viewModel = ViewModelProvider(this)[BrowserViewModel::class.java]
         
-        // Create simple GeckoView layout
-        geckoView = GeckoView(this)
-        
-        // Set GeckoView as content
-        val layout = FrameLayout(this)
-        layout.addView(geckoView, FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
-            FrameLayout.LayoutParams.MATCH_PARENT
-        ))
-        setContentView(layout)
-        
-        // Observe active session from ViewModel
-        viewModel.activeSession.value?.let { session ->
-            geckoView.setSession(session)
+        setContent {
+            AndroidBrowserTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    BrowserScreen(viewModel = viewModel)
+                }
+            }
+        }
+    }
+    
+    override fun onBackPressed() {
+        if (viewModel.currentUrl.value != "https://www.google.com") {
+            viewModel.goBack()
+        } else {
+            super.onBackPressed()
         }
     }
 }
