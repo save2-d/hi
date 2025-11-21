@@ -28,9 +28,9 @@ import org.mozilla.geckoview.GeckoView
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BrowserScreen(viewModel: BrowserViewModel = viewModel()) {
-    val currentUrl by viewModel.currentUrl.collectAsState()
-    val activeSession by viewModel.activeSession.collectAsState()
+fun BrowserScreen(browserViewModel: BrowserViewModel = viewModel()) {
+    val currentUrl by browserViewModel.currentUrl.collectAsState()
+    val activeSession by browserViewModel.activeSession.collectAsState()
     var showAiOverlay by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -45,7 +45,7 @@ fun BrowserScreen(viewModel: BrowserViewModel = viewModel()) {
                     )
                 },
                 actions = {
-                    Button(onClick = { viewModel.loadUrl(currentUrl) }) {
+                    Button(onClick = { browserViewModel.loadUrl(currentUrl) }) {
                         Text("Go")
                     }
                     Button(onClick = { showAiOverlay = !showAiOverlay }) {
@@ -64,7 +64,7 @@ fun BrowserScreen(viewModel: BrowserViewModel = viewModel()) {
         }
         
         if (showAiOverlay) {
-            com.antigravity.browser.ui.ai.AiOverlay(viewModel = viewModel, onDismiss = { showAiOverlay = false })
+            com.antigravity.browser.ui.ai.AiOverlay(viewModel = browserViewModel, onDismiss = { showAiOverlay = false })
         }
     }
 }
