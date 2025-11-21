@@ -167,6 +167,14 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         _aiOverlayVisible.value = !_aiOverlayVisible.value
     }
 
+    fun toggleExtension(extension: ExtensionType, enable: Boolean) {
+        extensionManager.toggleExtension(extension, enable)
+        viewModelScope.launch {
+            val action = if (enable) "enabled" else "disabled"
+            addChatMessage("${extension.name} $action", isUser = false)
+        }
+    }
+
     fun loadUrl(url: String) {
         _currentUrl.value = url
         val session = _activeSession.value
