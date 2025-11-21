@@ -1,6 +1,7 @@
 package com.antigravity.browser.data.db
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
@@ -19,6 +20,9 @@ interface ApiKeyDao {
 
     @Update
     suspend fun updateKey(apiKey: ApiKeyEntity)
+    
+    @Delete
+    suspend fun deleteKey(apiKey: ApiKeyEntity)
 
     @Query("UPDATE api_keys SET isActive = 0")
     suspend fun deactivateAll()

@@ -151,14 +151,6 @@ class BrowserAutomation(private val context: Context) {
      * Helper extension to evaluate JavaScript
      */
     private fun GeckoSession.evaluateJS(js: String) {
-        this.evaluateJS(js, object : GeckoSession.PromiseCallback<Any?> {
-            override fun resolve(value: Any?) {
-                Log.d(TAG, "JS executed successfully: $value")
-            }
-            
-            override fun reject(exception: Throwable?) {
-                Log.e(TAG, "JS execution failed", exception)
-            }
-        })
+        this.evaluateJS(js)
     }
 }
