@@ -175,6 +175,17 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun switchModel(modelName: String) {
+        apiKeyManager.switchModel(modelName)
+        viewModelScope.launch {
+            addChatMessage("Switched to $modelName model", isUser = false)
+        }
+    }
+
+    fun processAiInput(query: String) {
+        processAiCommand(query)
+    }
+
     fun loadUrl(url: String) {
         _currentUrl.value = url
         val session = _activeSession.value
