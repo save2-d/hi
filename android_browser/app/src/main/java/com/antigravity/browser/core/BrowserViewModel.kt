@@ -6,9 +6,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.antigravity.browser.BrowserApp
 import com.antigravity.browser.data.ai.ApiKeyManager
-import com.antigravity.browser.data.ai.GeminiClient
 import com.antigravity.browser.data.ai.GeminiRequest
-import com.antigravity.browser.data.ai.ContentPart
+import com.antigravity.browser.data.ai.Content
+import com.antigravity.browser.data.ai.TextPart
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -25,7 +25,6 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     private val TAG = "BrowserViewModel"
     private val browserApp = application as BrowserApp
     private val apiKeyManager = browserApp.apiKeyManager
-    private val geminiClient = GeminiClient(apiKeyManager)
     private val browserEngine = BrowserEngine(application)
     private val extensionManager = ExtensionManager(application, browserEngine.runtime)
     private val commandParser = CommandParser()
@@ -152,25 +151,11 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         }
     }
     
-    /**
-     * Direct chat with Gemini AI (for non-command queries)
-     */
     private suspend fun handleAiChat(query: String) {
         try {
-            val request = GeminiRequest(
-                contents = listOf(
-                    com.antigravity.browser.data.ai.Content(
-                        parts = listOf(ContentPart.TextPart(query))
-                    )
-                )
-            )
-            
-            val response = geminiClient.sendMessage(request)
-            val aiResponse = response.candidates?.firstOrNull()
-                ?.content?.parts?.firstOrNull()?.text
-                ?: "No response from AI"
-            
-            addChatMessage(aiResponse, isUser = false)
+            // TODO: Implement Gemini AI chat when needed
+            // For now, just acknowledge
+            addChatMessage("AI chat not yet implemented", isUser = false)
         } catch (e: Exception) {
             Log.e(TAG, "Error in AI chat", e)
             addChatMessage("AI Error: ${e.message}", isUser = false)
@@ -243,6 +228,5 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     override fun onCleared() {
         super.onCleared()
         _tabs.value.forEach { it.close() }
-        browserEngine.shutdown()
     }
 }
