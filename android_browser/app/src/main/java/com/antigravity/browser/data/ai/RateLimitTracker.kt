@@ -133,5 +133,5 @@ data class UsageStats(
     val tpmPercentage: Float get() = (tokensThisMinute.toFloat() / tpmLimit) * 100
     
     val isNearLimit: Boolean get() = rpmPercentage > 80 || rpdPercentage > 80 || tpmPercentage > 80
-    val isAtLimit: Boolean get get() = requestsThisMinute >= rpmLimit || requestsToday >= rpdLimit || tokensThisMinute >= tpmLimit
+    val isAtLimit: Boolean get() = requestsThisMinute >= rpmLimit || requestsToday >= rpdLimit || tokensThisMinute >= tpmLimit
 }
