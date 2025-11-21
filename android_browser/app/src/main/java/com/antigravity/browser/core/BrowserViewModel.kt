@@ -50,9 +50,25 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     private val _aiOverlayVisible = MutableStateFlow(false)
     val aiOverlayVisible = _aiOverlayVisible.asStateFlow()
 
+    // Navigation state
+    private val _canGoBack = MutableStateFlow(false)
+    val canGoBack = _canGoBack.asStateFlow()
+
+    private val navigationDelegate = object : GeckoSession.NavigationDelegate {
+        override fun onLocationChange(session: GeckoSession, url: String?, perms: MutableList<GeckoSession.PermissionDelegate.ContentPermission>) {
+            url?.let { _currentUrl.value = it }
+            Log.d(TAG, "Location changed: $url")
+        }
+
+        override fun onCanGoBack(session: GeckoSession, canGoBack: Boolean) {
+            _canGoBack.value = canGoBack
+        }
+    }
+
     init {
         extensionManager.installExtensions()
         createNewTab()
+        loadUrl(_currentUrl.value)
         refreshActiveKeyIndex()
         // Observe usage stats
         viewModelScope.launch {
@@ -208,6 +224,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     fun createNewTab() {
         val newSession = browserEngine.createSession()
+        newSession.navigationDelegate = navigationDelegate
         _tabs.value = _tabs.value + newSession
         switchToSession(newSession)
     }
