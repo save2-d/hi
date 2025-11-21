@@ -38,7 +38,7 @@ class ExtensionManager(private val context: Context, private val runtime: GeckoR
     
     fun setVideoSpeed(speed: Float) {
         // Send message to video speed extension via messaging
-        videoSpeedExtension?.let { ext ->
+        videoSpeedExtension?.let { _ ->
             try {
                 val message = org.json.JSONObject()
                 message.put("speed", speed)

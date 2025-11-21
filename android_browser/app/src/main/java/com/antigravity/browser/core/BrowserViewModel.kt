@@ -148,7 +148,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         }
     }
     
-    private suspend fun handleAiChat(query: String) {
+    private suspend fun handleAiChat(@Suppress("UNUSED_PARAMETER") query: String) {
         try {
             // TODO: Implement Gemini AI chat when needed
             // For now, just acknowledge

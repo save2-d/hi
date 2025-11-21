@@ -27,7 +27,7 @@ class ScreenCaptureService(private val context: Context) {
         }
     }
     
-    private suspend fun captureBitmap(session: GeckoSession): Bitmap? {
+    private suspend fun captureBitmap(@Suppress("UNUSED_PARAMETER") session: GeckoSession): Bitmap? {
         return try {
             // Note: Real implementation requires GeckoResult handling
             // and potentially a different API surface depending on version.
