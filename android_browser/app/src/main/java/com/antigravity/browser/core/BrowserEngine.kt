@@ -10,9 +10,9 @@ class BrowserEngine(private val context: Context) {
     val runtime: GeckoRuntime by lazy {
         try {
             GeckoRuntime.create(context)
-        } catch (e: Throwable) {
+        } catch (e: Exception) {
             android.util.Log.e("BrowserEngine", "Failed to create GeckoRuntime", e)
-            throw RuntimeException("Failed to create GeckoRuntime", e)
+            throw e
         }
     }
 

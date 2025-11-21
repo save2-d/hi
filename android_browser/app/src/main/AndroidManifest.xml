@@ -20,12 +20,34 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.AndroidBrowser">
+            android:theme="@style/Theme.AndroidBrowser"
+            android:configChanges="orientation|screenSize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- GeckoView Services -->
+        <service
+            android:name="org.mozilla.gecko.process.GeckoChildProcessServices$tab"
+            android:process="android:tab"
+            android:exported="false" />
+
+        <service
+            android:name="org.mozilla.gecko.process.GeckoChildProcessServices$content"
+            android:process=":content"
+            android:exported="false" />
+
+        <service
+            android:name="org.mozilla.gecko.process.GeckoChildProcessServices$gpu"
+            android:process=":gpu"
+            android:exported="false" />
+
+        <service
+            android:name="org.mozilla.gecko.process.GeckoChildProcessServices$socket"
+            android:process=":socket"
+            android:exported="false" />
     </application>
 
 </manifest>

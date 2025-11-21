@@ -53,35 +53,6 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     init {
         extensionManager.installExtensions()
         createNewTab()
-        loadUrl(_currentUrl.value)
-        refreshActiveKeyIndex()
-        // Observe usage stats
-        viewModelScope.launch {
-            apiKeyManager.usageStats.collect { stats ->
-                Log.d(TAG, "Usage stats: $stats")
-            }
-        }
-    }
-
-    // Navigation state
-    private val _canGoBack = MutableStateFlow(false)
-    val canGoBack = _canGoBack.asStateFlow()
-
-    private val navigationDelegate = object : GeckoSession.NavigationDelegate {
-        override fun onLocationChange(session: GeckoSession, url: String?, perms: MutableList<GeckoSession.PermissionDelegate.ContentPermission>) {
-            url?.let { _currentUrl.value = it }
-            Log.d(TAG, "Location changed: $url")
-        }
-
-        override fun onCanGoBack(session: GeckoSession, canGoBack: Boolean) {
-            _canGoBack.value = canGoBack
-        }
-    }
-
-    init {
-        extensionManager.installExtensions()
-        createNewTab()
-        loadUrl(_currentUrl.value)
         refreshActiveKeyIndex()
         // Observe usage stats
         viewModelScope.launch {
@@ -237,7 +208,6 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     fun createNewTab() {
         val newSession = browserEngine.createSession()
-        newSession.navigationDelegate = navigationDelegate
         _tabs.value = _tabs.value + newSession
         switchToSession(newSession)
     }
@@ -269,9 +239,6 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     private fun switchToSession(session: GeckoSession) {
         _activeSession.value = session
-        // Update state from new session
-        // Note: GeckoSession doesn't expose current URL directly in a simple property,
-        // so we rely on the delegate updates.
     }
 
     override fun onCleared() {

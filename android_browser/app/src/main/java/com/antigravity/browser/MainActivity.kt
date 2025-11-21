@@ -35,7 +35,7 @@ class MainActivity : ComponentActivity() {
     }
     
     override fun onBackPressed() {
-        if (viewModel.canGoBack.value) {
+        if (viewModel.currentUrl.value != "https://www.google.com") {
             viewModel.goBack()
         } else {
             super.onBackPressed()
