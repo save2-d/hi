@@ -53,6 +53,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     init {
         extensionManager.installExtensions()
         createNewTab()
+        loadUrl(_currentUrl.value)
         refreshActiveKeyIndex()
         // Observe usage stats
         viewModelScope.launch {

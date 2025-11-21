@@ -25,56 +25,15 @@ class ExtensionManager(private val context: Context, private val runtime: GeckoR
                 Log.e(TAG, "Error installing uBlock Origin", error)
             })
 
-        // Install Video Speed Extension from internal storage (copied from assets)
-        // We copy to filesDir to avoid compression/loading issues with assets
-        copyExtensionAssets()
-        val extensionDir = File(context.filesDir, "extensions/video-speed")
-        val extensionPath = "file://${extensionDir.absolutePath}/"
-        
-        runtime.webExtensionController.install(extensionPath)
+        // Install Video Speed Extension from assets
+        val extensionPath = "resource://android/assets/extensions/video-speed/"
+        runtime.webExtensionController.installBuiltIn(extensionPath)
             .accept({ extension ->
                 videoSpeedExtension = extension
                 Log.d(TAG, "Video speed extension installed: ${extension?.metaData?.name}")
             }, { error ->
                 Log.e(TAG, "Error installing video speed extension", error)
             })
-    }
-
-    private fun copyExtensionAssets() {
-        val assetPath = "extensions/video-speed"
-        val destDir = File(context.filesDir, "extensions/video-speed")
-        
-        try {
-            // Clean up old copy to ensure fresh install
-            destDir.deleteRecursively()
-            
-            fun copyRecursively(path: String, dest: File) {
-                val list = context.assets.list(path)
-                if (!list.isNullOrEmpty()) {
-                    dest.mkdirs()
-                    for (file in list) {
-                        copyRecursively(if (path.isEmpty()) file else "$path/$file", File(dest, file))
-                    }
-                } else {
-                    // Try to copy as file
-                    try {
-                        context.assets.open(path).use { input ->
-                            dest.parentFile?.mkdirs()
-                            java.io.FileOutputStream(dest).use { output ->
-                                input.copyTo(output)
-                            }
-                        }
-                    } catch (e: java.io.IOException) {
-                        // Ignore if it's a folder or fails
-                    }
-                }
-            }
-            
-            copyRecursively(assetPath, destDir)
-            Log.d(TAG, "Extension assets copied to ${destDir.absolutePath}")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to copy extension assets", e)
-        }
     }
     
     fun setVideoSpeed(speed: Float) {
