@@ -8,7 +8,12 @@ import org.mozilla.geckoview.GeckoView
 class BrowserEngine(private val context: Context) {
 
     val runtime: GeckoRuntime by lazy {
-        GeckoRuntime.create(context)
+        try {
+            GeckoRuntime.create(context)
+        } catch (e: Exception) {
+            android.util.Log.e("BrowserEngine", "Failed to create GeckoRuntime", e)
+            throw e
+        }
     }
 
     fun createSession(): GeckoSession {
