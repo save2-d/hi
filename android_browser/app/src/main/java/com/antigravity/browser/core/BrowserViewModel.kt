@@ -6,9 +6,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.antigravity.browser.BrowserApp
 import com.antigravity.browser.data.ai.ApiKeyManager
-import com.antigravity.browser.data.ai.GeminiRequest
-import com.antigravity.browser.data.ai.Content
-import com.antigravity.browser.data.ai.TextPart
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
