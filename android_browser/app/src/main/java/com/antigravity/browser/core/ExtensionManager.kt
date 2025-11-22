@@ -25,15 +25,29 @@ class ExtensionManager(private val context: Context, private val runtime: GeckoR
                 Log.e(TAG, "Error installing uBlock Origin", error)
             })
 
-        // Install Video Speed Extension from assets
-        val extensionPath = "resource://android/assets/extensions/video-speed/"
-        runtime.webExtensionController.installBuiltIn(extensionPath)
-            .accept({ extension ->
-                videoSpeedExtension = extension
-                Log.d(TAG, "Video speed extension installed: ${extension?.metaData?.name}")
-            }, { error ->
-                Log.e(TAG, "Error installing video speed extension", error)
-            })
+        // Install Video Speed Extension from XPI
+        try {
+            val xpiName = "video-speed.xpi"
+            val xpiFile = File(context.filesDir, xpiName)
+            
+            // Copy from assets to internal storage
+            context.assets.open("extensions/$xpiName").use { input ->
+                xpiFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+            
+            // Install from file
+            runtime.webExtensionController.install("file://${xpiFile.absolutePath}")
+                .accept({ extension ->
+                    videoSpeedExtension = extension
+                    Log.d(TAG, "Video speed extension installed from XPI: ${extension?.metaData?.name}")
+                }, { error ->
+                    Log.e(TAG, "Error installing video speed extension from XPI", error)
+                })
+        } catch (e: Exception) {
+            Log.e(TAG, "Error copying/installing video speed extension", e)
+        }
     }
     
     fun setVideoSpeed(speed: Float) {
