@@ -21,7 +21,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     private val TAG = "BrowserViewModel"
     private val browserApp = application as BrowserApp
-    val apiKeyManager = browserApp.apiKeyManager
+    val apiKeyManager = browserApp.apiKeyManager ?: throw IllegalStateException("ApiKeyManager is not initialized yet.")
     private val browserEngine = BrowserEngine(application)
     private val extensionManager = ExtensionManager(application, browserEngine.runtime)
     private val commandParser = CommandParser()
