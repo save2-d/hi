@@ -246,8 +246,8 @@ class ApiKeyManager(private val apiKeyDao: ApiKeyDao) {
      */
     fun switchModel(modelName: String) {
         _currentModel.value = when (modelName.lowercase()) {
-            "flash" -> GeminiClient.MODEL_FLASH_THINKING
-            "pro" -> GeminiClient.MODEL_PRO
+            "flash", "2.5 flash", "gemini 2.5 flash" -> GeminiClient.MODEL_FLASH_THINKING
+            "pro", "2.5 pro", "gemini 2.5 pro" -> GeminiClient.MODEL_PRO
             "flash-thinking" -> GeminiClient.MODEL_FLASH_THINKING
             else -> GeminiClient.MODEL_FLASH_THINKING
         }

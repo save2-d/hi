@@ -199,12 +199,12 @@ object GeminiClient {
      */
     fun switchModel(modelName: String) {
         currentModel = when (modelName.lowercase()) {
-            "flash" -> MODEL_FLASH_THINKING
-            "pro" -> MODEL_PRO
+            "flash", "2.5 flash", "gemini 2.5 flash" -> MODEL_FLASH_THINKING // User requested "thinking" enabled default
+            "pro", "2.5 pro", "gemini 2.5 pro" -> MODEL_PRO
             "flash-thinking" -> MODEL_FLASH_THINKING
             else -> MODEL_FLASH_THINKING
         }
-        Log.d(TAG, "Switched to model: $currentModel")
+        Log.d(TAG, "Switched to model: $currentModel (mapped from $modelName)")
     }
 }
 

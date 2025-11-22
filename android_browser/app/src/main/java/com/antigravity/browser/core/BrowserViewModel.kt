@@ -165,14 +165,150 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         }
     }
     
-    private suspend fun handleAiChat(@Suppress("UNUSED_PARAMETER") query: String) {
+    private suspend fun handleAiChat(query: String) {
         try {
-            // TODO: Implement Gemini AI chat when needed
-            // For now, just acknowledge
-            addChatMessage("AI chat not yet implemented", isUser = false)
+            val apiKey = apiKeyManager.getActiveKey()
+            if (apiKey == null) {
+                addChatMessage("Error: No API key available", isUser = false)
+                return
+            }
+
+            val result = com.antigravity.browser.data.ai.GeminiClient.generateWithFunctions(
+                apiKey = apiKey,
+                prompt = query,
+                functions = com.antigravity.browser.data.ai.BrowserTools.getTools()
+            )
+
+            result.fold(
+                onSuccess = { response ->
+                    val candidate = response.candidates.firstOrNull()
+                    val part = candidate?.content?.parts?.firstOrNull()
+                    
+                    if (part?.functionCall != null) {
+                        val call = part.functionCall
+                        Log.d(TAG, "AI requested function call: ${call.name}")
+                        executeTool(call.name, call.args)
+                    } else if (part?.text != null) {
+                        addChatMessage(part.text, isUser = false)
+                    }
+                },
+                onFailure = { e ->
+                    Log.e(TAG, "Gemini API error", e)
+                    addChatMessage("AI Error: ${e.message}", isUser = false)
+                    // Report error to manager for rotation
+                    apiKeyManager.reportError(isRateLimit = e.message?.contains("429") == true)
+                }
+            )
         } catch (e: Exception) {
             Log.e(TAG, "Error in AI chat", e)
             addChatMessage("AI Error: ${e.message}", isUser = false)
+        }
+    }
+
+    private fun executeTool(name: String, args: Map<String, Any>) {
+        viewModelScope.launch {
+            try {
+                var resultMessage = "Executed $name"
+                
+                when (name) {
+                    "open_url" -> {
+                        val url = args["url"] as? String
+                        if (url != null) {
+                            loadUrl(url)
+                            resultMessage = "Opened $url"
+                        }
+                    }
+                    "search_google" -> {
+                        val query = args["query"] as? String
+                        if (query != null) {
+                            val searchUrl = "https://www.google.com/search?q=$query"
+                            loadUrl(searchUrl)
+                            resultMessage = "Searched for $query"
+                        }
+                    }
+                    "scroll" -> {
+                        val directionStr = args["direction"] as? String
+                        val amount = (args["amount"] as? Number)?.toFloat() ?: 0.5f
+                        if (directionStr != null) {
+                            val direction = when(directionStr.uppercase()) {
+                                "UP" -> ScrollDirection.UP
+                                "DOWN" -> ScrollDirection.DOWN
+                                "LEFT" -> ScrollDirection.LEFT
+                                "RIGHT" -> ScrollDirection.RIGHT
+                                else -> ScrollDirection.DOWN
+                            }
+                            val session = _activeSession.value
+                            if (session != null) {
+                                browserAutomation.executeCommand(
+                                    session, 
+                                    BrowserCommand.Scroll(direction, amount)
+                                )
+                                resultMessage = "Scrolled $directionStr"
+                            }
+                        }
+                    }
+                    "video_control" -> {
+                        val action = args["action"] as? String
+                        val seconds = (args["seconds"] as? Number)?.toInt() ?: 10
+                        val session = _activeSession.value
+                        if (session != null && action != null) {
+                            when (action) {
+                                "PLAY_PAUSE" -> browserAutomation.executeCommand(session, BrowserCommand.PlayPause)
+                                "SEEK_FORWARD" -> browserAutomation.executeCommand(session, BrowserCommand.Seek(seconds))
+                                "SEEK_BACKWARD" -> browserAutomation.executeCommand(session, BrowserCommand.Seek(-seconds))
+                            }
+                            resultMessage = "Video action: $action"
+                        }
+                    }
+                    "set_video_speed" -> {
+                        val speed = (args["speed"] as? Number)?.toFloat() ?: 1.0f
+                        val session = _activeSession.value
+                        if (session != null) {
+                            browserAutomation.executeCommand(session, BrowserCommand.SetVideoSpeed(speed))
+                            // Also update extension state if needed
+                            extensionManager.setVideoSpeed(speed)
+                            resultMessage = "Set video speed to ${speed}x"
+                        }
+                    }
+                    "manage_tabs" -> {
+                        val action = args["action"] as? String
+                        val index = (args["index"] as? Number)?.toInt() ?: 0
+                        when (action) {
+                            "CREATE" -> {
+                                createNewTab()
+                                resultMessage = "Created new tab"
+                            }
+                            "CLOSE" -> {
+                                closeTab(index)
+                                resultMessage = "Closed tab $index"
+                            }
+                            "SWITCH" -> {
+                                switchToTab(index)
+                                resultMessage = "Switched to tab $index"
+                            }
+                        }
+                    }
+                    "toggle_extension" -> {
+                        val extName = args["extension"] as? String
+                        val enable = args["enable"] as? Boolean ?: true
+                        if (extName != null) {
+                            val type = when(extName.uppercase()) {
+                                "UBLOCK" -> ExtensionType.UBLOCK
+                                "VIDEO_SPEED" -> ExtensionType.VIDEO_SPEED
+                                else -> null
+                            }
+                            if (type != null) {
+                                toggleExtension(type, enable)
+                                resultMessage = "${if(enable) "Enabled" else "Disabled"} $extName"
+                            }
+                        }
+                    }
+                }
+                addChatMessage(resultMessage, isUser = false)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error executing tool $name", e)
+                addChatMessage("Error executing $name: ${e.message}", isUser = false)
+            }
         }
     }
     

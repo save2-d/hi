@@ -48,6 +48,8 @@ android {
     
     aaptOptions {
         noCompress("json", "js", "css", "html", "png", "xpi")
+        // Allow directories starting with underscore (for _locales in extensions)
+        ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~"
     }
 }
 

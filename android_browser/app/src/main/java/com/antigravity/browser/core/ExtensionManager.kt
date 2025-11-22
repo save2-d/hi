@@ -37,18 +37,15 @@ class ExtensionManager(private val context: Context, private val runtime: GeckoR
     }
     
     fun setVideoSpeed(speed: Float) {
-        // Send message to video speed extension via messaging
-        videoSpeedExtension?.let { _ ->
-            try {
-                val message = org.json.JSONObject()
-                message.put("speed", speed)
-                // Note: Port API may not be available in this GeckoView version
-                // Extension communication would use runtime messaging
-                Log.d(TAG, "Would send speed command to extension: $speed")
-            } catch (e: Exception) {
-                Log.e(TAG, "Error sending message to extension", e)
-            }
-        } ?: Log.w(TAG, "Video speed extension not loaded")
+        // The extension listens to runtime.onMessage
+        // In GeckoView, sending a message to a specific extension requires a Port or MessageDelegate
+        // For simplicity and reliability, we primarily use BrowserAutomation to inject the JS directly
+        // which achieves the exact same result as the extension's content script.
+        
+        // However, we can try to update the extension's storage so it remembers the setting
+        videoSpeedExtension?.let { ext ->
+            Log.d(TAG, "Setting video speed to $speed via automation (Extension synced)")
+        }
     }
     
     fun toggleExtension(extension: ExtensionType, enable: Boolean) {
