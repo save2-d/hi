@@ -1,16 +1,18 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("kotlin-parcelize")
+    id("com.google.devtools.ksp") version "1.9.22-1.0.17"
 }
 
 android {
     namespace = "com.antigravity.browser"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.antigravity.browser"
-        minSdk = 26
-        targetSdk = 34
+        minSdk = 28
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -35,7 +37,7 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
+        kotlinCompilerExtensionVersion = "1.5.8"
     }
 }
 
@@ -46,17 +48,17 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     
     // GeckoView
-    implementation("org.mozilla.geckoview:geckoview:145.0.20251106194447")
+    implementation("org.mozilla.geckoview:geckoview:128.0.20240708182223")
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
     
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
 
     // Compose
-    implementation(platform("androidx.compose:compose-bom:2023.08.00"))
+    implementation(platform("androidx.compose:compose-bom:2024.02.02"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -65,9 +67,14 @@ dependencies {
     // Networking (for Gemini API if needed manually)
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation("com.google.ai.client.generativeai:generativeai:0.3.0")
     
     // Room Database
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
-    // ksp("androidx.room:room-compiler:2.6.1") // KSP not setup, skipping annotation processor for now or using kapt if needed
+    ksp("androidx.room:room-compiler:2.6.1")
+
+    // For Web Extensions
+    implementation("androidx.browser:browser:1.8.0")
 }

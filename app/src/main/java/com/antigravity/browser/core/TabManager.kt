@@ -2,6 +2,7 @@ package com.antigravity.browser.core
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.util.concurrent.ConcurrentHashMap
 import org.mozilla.geckoview.GeckoSession
 
 object TabManager {
@@ -11,7 +12,12 @@ object TabManager {
     private val _currentTab = MutableStateFlow<GeckoSession?>(null)
     val currentTab: StateFlow<GeckoSession?> = _currentTab
 
-    fun createTab() {
+    private val _currentUrl = MutableStateFlow<String?>(null)
+    val currentUrl: StateFlow<String?> = _currentUrl
+
+    private val sessionUrls = ConcurrentHashMap<GeckoSession, String>()
+
+    fun createTab(startUrl: String = "https://www.google.com") {
         val session = GeckoEngine.createSession()
         val currentList = _tabs.value.toMutableList()
         currentList.add(session)
@@ -19,7 +25,7 @@ object TabManager {
         _currentTab.value = session
         
         // Load default page
-        session.loadUri("https://www.google.com")
+        loadUrl(session, startUrl)
     }
 
     fun closeTab(session: GeckoSession) {
@@ -30,10 +36,25 @@ object TabManager {
         
         if (_currentTab.value == session) {
             _currentTab.value = currentList.lastOrNull()
+            _currentUrl.value = _currentTab.value?.let { sessionUrls[it] }
         }
     }
 
     fun switchToTab(session: GeckoSession) {
         _currentTab.value = session
+        _currentUrl.value = sessionUrls[session]
+    }
+
+    fun loadUrl(session: GeckoSession, url: String) {
+        if (AdBlocker.isBlocked(url)) {
+            // Block the URL by navigating to about:blank to avoid loading trackers/ads
+            session.loadUri("about:blank")
+            sessionUrls[session] = "about:blank"
+            _currentUrl.value = "about:blank"
+        } else {
+            session.loadUri(url)
+            sessionUrls[session] = url
+            _currentUrl.value = url
+        }
     }
 }

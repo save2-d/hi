@@ -7,6 +7,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Send
@@ -39,7 +42,6 @@ class BrowserActivity : ComponentActivity() {
 }
 
 @Composable
-@Composable
 fun BrowserScreen() {
     val tabs by com.antigravity.browser.core.TabManager.tabs.collectAsState()
     val currentTab by com.antigravity.browser.core.TabManager.currentTab.collectAsState()
@@ -54,12 +56,17 @@ fun BrowserScreen() {
         }
     }
 
+    val address = remember { mutableStateOf("https://www.google.com") }
     Scaffold(
         topBar = {
             // Address Bar
             TextField(
-                value = "https://www.google.com", // TODO: Observe current URL
-                onValueChange = { currentTab?.loadUri(it) },
+                value = address.value,
+                onValueChange = { address.value = it },
+                keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Go),
+                keyboardActions = androidx.compose.ui.text.input.KeyboardActions(onGo = { currentTab?.let { com.antigravity.browser.core.TabManager.loadUrl(it, address.value) } }),
+                singleLine = true,
+                maxLines = 1,
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Address") },
                 trailingIcon = {
@@ -71,19 +78,31 @@ fun BrowserScreen() {
         },
         bottomBar = {
             BottomAppBar {
+                IconButton(onClick = { currentTab?.let { com.antigravity.browser.core.TabManager.loadUrl(it, "javascript:history.back()") } }) {
+                    Icon(androidx.compose.material.icons.Icons.Default.ArrowBack, contentDescription = "Back")
+                }
+                IconButton(onClick = { currentTab?.let { com.antigravity.browser.core.TabManager.loadUrl(it, "javascript:history.forward()") } }) {
+                    Icon(androidx.compose.material.icons.Icons.Default.ArrowForward, contentDescription = "Forward")
+                }
+                IconButton(onClick = { currentTab?.let { com.antigravity.browser.core.TabManager.loadUrl(it, "javascript:location.reload(true)") } }) {
+                    Icon(androidx.compose.material.icons.Icons.Default.Refresh, contentDescription = "Reload")
+                }
+                val currentUrl by com.antigravity.browser.core.TabManager.currentUrl.collectAsState()
+                var address by remember { mutableStateOf(currentUrl ?: "https://www.google.com") }
                 IconButton(onClick = { showAiOverlay = true }) {
                     Icon(androidx.compose.material.icons.Icons.Default.Face, contentDescription = "AI")
                 }
                 Spacer(Modifier.weight(1f))
                 IconButton(onClick = { com.antigravity.browser.core.TabManager.createTab() }) {
                     Icon(androidx.compose.material.icons.Icons.Default.Add, contentDescription = "New Tab")
-                }
+                    var address by remember { mutableStateOf(currentUrl ?: "https://www.google.com") }
                 IconButton(onClick = { showSettings = true }) {
                     Icon(androidx.compose.material.icons.Icons.Default.Settings, contentDescription = "Settings")
                 }
             }
         }
     ) { padding ->
+                    val currentUrl by com.antigravity.browser.core.TabManager.currentUrl.collectAsState()
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             currentTab?.let { session ->
                 AndroidView(
@@ -184,6 +203,20 @@ fun AIOverlay(onDismiss: () -> Unit, onExecuteScript: (String) -> Unit) {
                         } else if (prompt.contains("scroll down", ignoreCase = true)) {
                             onExecuteScript("window.scrollBy(0, 500);")
                             response = "Scrolling down..."
+                        } else if (prompt.contains("use pro", ignoreCase = true) || prompt.contains("switch to pro", ignoreCase = true)) {
+                            com.antigravity.browser.data.GeminiRepository.setActiveModel(com.antigravity.browser.data.GeminiRepository.MODEL_PRO)
+                            response = "Switched to Gemini 2.5 Pro until restart or further instruction."
+                        } else if (prompt.contains("use flash", ignoreCase = true) || prompt.contains("switch to flash", ignoreCase = true)) {
+                            com.antigravity.browser.data.GeminiRepository.setActiveModel(com.antigravity.browser.data.GeminiRepository.MODEL_FLASH)
+                            response = "Switched to Gemini 2.5 Flash."
+                        } else if (prompt.startsWith("add api key ", ignoreCase = true)) {
+                            val key = prompt.substringAfter("add api key ").trim()
+                            if (key.isNotBlank()) {
+                                com.antigravity.browser.data.GeminiRepository.addApiKey(key)
+                                response = "Added API Key"
+                            } else {
+                                response = "No API key provided"
+                            }
                         } else {
                             response = com.antigravity.browser.data.GeminiRepository.generateContent(prompt)
                         }
@@ -203,6 +236,8 @@ fun AIOverlay(onDismiss: () -> Unit, onExecuteScript: (String) -> Unit) {
 fun SettingsDialog(onDismiss: () -> Unit) {
     var apiKey by remember { mutableStateOf("") }
     val currentKey = com.antigravity.browser.data.GeminiRepository.getCurrentKey() ?: "None"
+    var showExtensionEditor by remember { mutableStateOf(false) }
+    val keys by com.antigravity.browser.data.GeminiRepository.apiKeys.collectAsState()
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -216,6 +251,17 @@ fun SettingsDialog(onDismiss: () -> Unit) {
                     onValueChange = { apiKey = it },
                     label = { Text("Add API Key") }
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                if (keys.isNotEmpty()) {
+                    Text("Saved Keys")
+                    keys.forEachIndexed { idx, key ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(key.take(8) + "...", modifier = Modifier.weight(1f))
+                            TextButton(onClick = { com.antigravity.browser.data.GeminiRepository.rotateKey(isError = false) }) { Text("Set Active") }
+                            TextButton(onClick = { com.antigravity.browser.data.GeminiRepository.removeApiKey(key) }) { Text("Delete") }
+                        }
+                    }
+                }
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = {
                     val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO)
@@ -224,6 +270,22 @@ fun SettingsDialog(onDismiss: () -> Unit) {
                     }
                 }) {
                     Text("Install uBlock Origin Manually")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = {
+                    showExtensionEditor = true
+                }) {
+                    Text("Open Extension Editor")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = {
+                    val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO)
+                    scope.launch {
+                        val ok = com.antigravity.browser.core.AdBlocker.loadFilterListFromUrl("https://easylist.to/easylist/easylist.txt")
+                        // This is a simple way to notify user — in production use better feedback
+                    }
+                }) {
+                    Text("Load EasyList Filters")
                 }
             }
         },
@@ -239,4 +301,8 @@ fun SettingsDialog(onDismiss: () -> Unit) {
             TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
+
+    if (showExtensionEditor) {
+        ExtensionEditor(onClose = { showExtensionEditor = false })
+    }
 }

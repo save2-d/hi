@@ -18,6 +18,12 @@ object GeminiRepository {
     // Models
     const val MODEL_FLASH = "gemini-2.5-flash"
     const val MODEL_PRO = "gemini-2.5-pro"
+    private var activeModel = MODEL_FLASH
+    // Per-model request timestamps to enforce RPM limits (simple enforcement)
+    private val requestTimestamps: MutableMap<String, MutableList<Long>> = mutableMapOf(
+        MODEL_FLASH to mutableListOf(),
+        MODEL_PRO to mutableListOf()
+    )
 
     private lateinit var prefs: SharedPreferences
     private val _apiKeys = MutableStateFlow<List<String>>(emptyList())
@@ -75,6 +81,10 @@ object GeminiRepository {
         return keys[currentKeyIndex]
     }
 
+    fun setActiveModel(model: String) {
+        activeModel = model
+    }
+
     fun rotateKey(isError: Boolean = false) {
         val keys = _apiKeys.value
         if (keys.isEmpty()) return
@@ -106,10 +116,27 @@ object GeminiRepository {
     }
     
     suspend fun generateContent(prompt: String, model: String = MODEL_FLASH): String {
+        val actualModel = if (model.isBlank()) activeModel else model
         val key = getCurrentKey() ?: return "Please add a Gemini API Key in settings."
         
         try {
-            val url = "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent"
+            // Enforce RPM limit
+            val rpmLimit = when (actualModel) {
+                MODEL_PRO -> 2 // using an integer form of approx
+                MODEL_FLASH -> 8
+                else -> 8
+            }
+            val now = System.currentTimeMillis()
+            val ts = requestTimestamps.getOrPut(actualModel) { mutableListOf() }
+            // Remove older than 60s
+            ts.removeIf { now - it > 60_000 }
+            if (ts.size >= rpmLimit) {
+                // rotate key and return a polite message
+                rotateKey(isError = false)
+                return "RPM limit reached for $actualModel. Key rotated. Please try again."
+            }
+            ts.add(now)
+            val url = "https://generativelanguage.googleapis.com/v1beta/models/$actualModel:generateContent"
             val request = GeminiRequest(
                 contents = listOf(Content(parts = listOf(Part(text = prompt))))
             )
