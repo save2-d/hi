@@ -54,22 +54,14 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     private val _canGoBack = MutableStateFlow(false)
     val canGoBack = _canGoBack.asStateFlow()
 
-    // Track navigation state per session
-    private val sessionCanGoBack = mutableMapOf<GeckoSession, Boolean>()
-
     private val navigationDelegate = object : GeckoSession.NavigationDelegate {
         override fun onLocationChange(session: GeckoSession, url: String?, perms: MutableList<GeckoSession.PermissionDelegate.ContentPermission>) {
-            if (session == _activeSession.value) {
-                url?.let { _currentUrl.value = it }
-                Log.d(TAG, "Location changed: $url")
-            }
+            url?.let { _currentUrl.value = it }
+            Log.d(TAG, "Location changed: $url")
         }
 
         override fun onCanGoBack(session: GeckoSession, canGoBack: Boolean) {
-            sessionCanGoBack[session] = canGoBack
-            if (session == _activeSession.value) {
-                _canGoBack.value = canGoBack
-            }
+            _canGoBack.value = canGoBack
         }
     }
 
@@ -473,7 +465,6 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     private fun switchToSession(session: GeckoSession) {
         _activeSession.value = session
-        _canGoBack.value = sessionCanGoBack[session] ?: false
     }
 
     override fun onCleared() {
