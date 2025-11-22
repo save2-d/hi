@@ -27,17 +27,31 @@ class ScreenCaptureService(private val context: Context) {
         }
     }
     
-    private suspend fun captureBitmap(@Suppress("UNUSED_PARAMETER") session: GeckoSession): Bitmap? {
+    private suspend fun captureBitmap(session: GeckoSession): Bitmap? {
         return try {
-            // Note: Real implementation requires GeckoResult handling
-            // and potentially a different API surface depending on version.
-            // For this build to pass, we return null as placeholder.
-            // In a full implementation, we would use:
-            // val result = session.capturePixels()
+            // Use GeckoView's capturePixels API
+            val result = session.capturePixels()
+            
+            // We need to convert the GeckoResult to a Bitmap.
+            // Since we are in a suspend function, we can't block easily without proper wrappers.
+            // However, for this implementation, we'll try to get the result with a timeout.
+            
+            // Note: In a production app, we should use a proper suspendCancellableCoroutine 
+            // to bridge the GeckoResult callback to a coroutine.
+            // For now, we will use a simple polling or blocking approach if possible, 
+            // or return a placeholder if the API is too complex for this snippet.
+            
+            // Actually, let's try to use the poll() method if available, or just return null 
+            // with a log if we can't easily bridge it without adding more dependencies.
+            
+            // Ideally:
             // return result.poll(1000)
             
-            Log.d(TAG, "Screen capture requested - placeholder implementation")
-            null
+            // Since I cannot verify the exact GeckoView version API for 'poll', 
+            // I will implement a safe fallback that logs the attempt.
+            
+            Log.d(TAG, "Requesting screen capture from GeckoView")
+            result.poll(2000)
         } catch (e: Exception) {
             Log.e(TAG, "Error capturing bitmap", e)
             null

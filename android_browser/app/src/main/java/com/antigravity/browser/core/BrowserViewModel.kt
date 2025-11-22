@@ -165,12 +165,43 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
         }
     }
     
+    private val screenCaptureService = ScreenCaptureService(application)
+
     private suspend fun handleAiChat(query: String) {
         try {
             val apiKey = apiKeyManager.getActiveKey()
             if (apiKey == null) {
                 addChatMessage("Error: No API key available", isUser = false)
                 return
+            }
+
+            // Check for vision request
+            val lowerQuery = query.lowercase()
+            if (lowerQuery.contains("see") || lowerQuery.contains("look") || lowerQuery.contains("screen") || lowerQuery.contains("what is on")) {
+                val session = _activeSession.value
+                val bitmapBase64 = screenCaptureService.captureScreen(session)
+                
+                if (bitmapBase64 != null) {
+                    addChatMessage("Analyzing screen...", isUser = false)
+                    val result = com.antigravity.browser.data.ai.GeminiClient.generateWithVision(
+                        apiKey = apiKey,
+                        prompt = query,
+                        imageBase64 = bitmapBase64
+                    )
+                    
+                    result.fold(
+                        onSuccess = { text ->
+                            addChatMessage(text, isUser = false)
+                        },
+                        onFailure = { e ->
+                            Log.e(TAG, "Vision API error", e)
+                            addChatMessage("Vision Error: ${e.message}", isUser = false)
+                        }
+                    )
+                    return
+                } else {
+                    addChatMessage("Could not capture screen. Proceeding with text only.", isUser = false)
+                }
             }
 
             val result = com.antigravity.browser.data.ai.GeminiClient.generateWithFunctions(
@@ -235,6 +266,8 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
                                 "DOWN" -> ScrollDirection.DOWN
                                 "LEFT" -> ScrollDirection.LEFT
                                 "RIGHT" -> ScrollDirection.RIGHT
+                                "TOP" -> ScrollDirection.UP // Fallback
+                                "BOTTOM" -> ScrollDirection.DOWN // Fallback
                                 else -> ScrollDirection.DOWN
                             }
                             val session = _activeSession.value
@@ -303,8 +336,42 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
                             }
                         }
                     }
+                    "get_page_content" -> {
+                        val session = _activeSession.value
+                        if (session != null) {
+                            val content = browserAutomation.getPageContent(session)
+                            // We need to send this back to the AI.
+                            // Since this is a one-way tool execution in this architecture,
+                            // we will just display it or feed it back as a new user prompt context if needed.
+                            // Ideally, we should have a multi-turn conversation where the tool output goes back to model.
+                            // For now, we'll display a summary and ask the AI to process it if it was a direct request.
+                            
+                            // Hack: Send the content back to AI as a new prompt "Here is the page content: ..."
+                            // But to avoid loops, we'll just show it or summarize it.
+                            
+                            // Better: Call AI again with the content.
+                            addChatMessage("Read page content (${content.length} chars). Summarizing...", isUser = false)
+                            
+                            val apiKey = apiKeyManager.getActiveKey()
+                            if (apiKey != null) {
+                                val summaryResult = com.antigravity.browser.data.ai.GeminiClient.generateText(
+                                    apiKey = apiKey,
+                                    prompt = "Here is the content of the page the user is looking at. Please summarize it or answer their previous question based on it:\n\n${content.take(5000)}", // Limit context
+                                    enableThinking = true
+                                )
+                                summaryResult.onSuccess { summary ->
+                                    addChatMessage(summary, isUser = false)
+                                }
+                            }
+                            resultMessage = "Processed page content"
+                        } else {
+                            resultMessage = "No active page to read"
+                        }
+                    }
                 }
-                addChatMessage(resultMessage, isUser = false)
+                if (name != "get_page_content") { // Avoid double messaging for content
+                    addChatMessage(resultMessage, isUser = false)
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Error executing tool $name", e)
                 addChatMessage("Error executing $name: ${e.message}", isUser = false)

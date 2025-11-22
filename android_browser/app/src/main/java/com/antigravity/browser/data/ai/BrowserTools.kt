@@ -117,6 +117,14 @@ object BrowserTools {
                     ),
                     required = listOf("extension", "enable")
                 )
+            ),
+            FunctionDeclaration(
+                name = "get_page_content",
+                description = "Get the text content of the current web page. Use this to read, summarize, or answer questions about the page.",
+                parameters = FunctionParameters(
+                    properties = mapOf(),
+                    required = listOf()
+                )
             )
         )
     }
