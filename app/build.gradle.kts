@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "com.antigravity.browser"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.antigravity.browser"
         minSdk = 28
-        targetSdk = 35
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -48,7 +48,7 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     
     // GeckoView
-    implementation("org.mozilla.geckoview:geckoview:128.0.20240708182223")
+    implementation("org.mozilla.geckoview:geckoview:121.0")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
