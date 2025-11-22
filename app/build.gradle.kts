@@ -46,7 +46,7 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     
     // GeckoView
-    implementation("org.mozilla.geckoview:geckoview:121.0.20240213153646")
+    implementation("org.mozilla.geckoview:geckoview:131.0.20240912143545")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
