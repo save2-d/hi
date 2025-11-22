@@ -6,30 +6,24 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Face
-import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.antigravity.browser.core.GeckoEngine
+import com.antigravity.browser.core.*
+import com.antigravity.browser.data.GeminiRepository
 import kotlinx.coroutines.launch
-import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.GeckoView
 
 class BrowserActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        // Session managed by TabManager
+        GeckoEngine.initialize(this)
+        GeminiRepository.initialize(this)
 
         setContent {
             MaterialTheme {
@@ -43,32 +37,43 @@ class BrowserActivity : ComponentActivity() {
 
 @Composable
 fun BrowserScreen() {
-    val tabs by com.antigravity.browser.core.TabManager.tabs.collectAsState()
-    val currentTab by com.antigravity.browser.core.TabManager.currentTab.collectAsState()
-    
+    val tabs by TabManager.tabs.collectAsState()
+    val currentTab by TabManager.currentTab.collectAsState()
+    val currentUrl by TabManager.currentUrl.collectAsState()
+
+    var showFirstLaunch by remember { mutableStateOf(false) }
     var showAiOverlay by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showTabs by remember { mutableStateOf(false) }
+    var showJsInjector by remember { mutableStateOf(false) }
+    var address by remember { mutableStateOf(currentUrl ?: "https://www.google.com") }
 
     LaunchedEffect(Unit) {
-        if (tabs.isEmpty()) {
-            com.antigravity.browser.core.TabManager.createTab()
-        }
+        if (tabs.isEmpty()) TabManager.createTab()
+        if (GeminiRepository.apiKeys.value.isEmpty()) showFirstLaunch = true
     }
 
-    val address = remember { mutableStateOf("https://www.google.com") }
+    LaunchedEffect(currentUrl) {
+        address = currentUrl ?: address
+    }
+
+    if (showFirstLaunch) {
+        FirstLaunchScreen(onComplete = { showFirstLaunch = false })
+        return
+    }
+
     Scaffold(
         topBar = {
-            // Address Bar
             TextField(
-                value = address.value,
-                onValueChange = { address.value = it },
-                keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Go),
-                keyboardActions = androidx.compose.ui.text.input.KeyboardActions(onGo = { currentTab?.let { com.antigravity.browser.core.TabManager.loadUrl(it, address.value) } }),
-                singleLine = true,
-                maxLines = 1,
+                value = address,
+                onValueChange = { address = it },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Address") },
+                singleLine = true,
+                keyboardOptions = androidx.compose.ui.text.input.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Go),
+                keyboardActions = androidx.compose.ui.text.input.KeyboardActions(
+                    onGo = { currentTab?.let { TabManager.loadUrl(it, address) } }
+                ),
                 trailingIcon = {
                     IconButton(onClick = { showTabs = true }) {
                         Text(tabs.size.toString(), style = MaterialTheme.typography.bodyLarge)
@@ -78,42 +83,33 @@ fun BrowserScreen() {
         },
         bottomBar = {
             BottomAppBar {
-                IconButton(onClick = { currentTab?.let { com.antigravity.browser.core.TabManager.loadUrl(it, "javascript:history.back()") } }) {
+                IconButton(onClick = { currentTab?.let { TabManager.loadUrl(it, "javascript:history.back()") } }) {
                     Icon(androidx.compose.material.icons.Icons.Default.ArrowBack, contentDescription = "Back")
                 }
-                IconButton(onClick = { currentTab?.let { com.antigravity.browser.core.TabManager.loadUrl(it, "javascript:history.forward()") } }) {
+                IconButton(onClick = { currentTab?.let { TabManager.loadUrl(it, "javascript:history.forward()") } }) {
                     Icon(androidx.compose.material.icons.Icons.Default.ArrowForward, contentDescription = "Forward")
                 }
-                IconButton(onClick = { currentTab?.let { com.antigravity.browser.core.TabManager.loadUrl(it, "javascript:location.reload(true)") } }) {
+                IconButton(onClick = { currentTab?.let { TabManager.loadUrl(it, "javascript:location.reload(true)") } }) {
                     Icon(androidx.compose.material.icons.Icons.Default.Refresh, contentDescription = "Reload")
                 }
-                val currentUrl by com.antigravity.browser.core.TabManager.currentUrl.collectAsState()
-                var address by remember { mutableStateOf(currentUrl ?: "https://www.google.com") }
                 IconButton(onClick = { showAiOverlay = true }) {
                     Icon(androidx.compose.material.icons.Icons.Default.Face, contentDescription = "AI")
                 }
                 Spacer(Modifier.weight(1f))
-                IconButton(onClick = { com.antigravity.browser.core.TabManager.createTab() }) {
+                IconButton(onClick = { TabManager.createTab() }) {
                     Icon(androidx.compose.material.icons.Icons.Default.Add, contentDescription = "New Tab")
-                    var address by remember { mutableStateOf(currentUrl ?: "https://www.google.com") }
+                }
                 IconButton(onClick = { showSettings = true }) {
                     Icon(androidx.compose.material.icons.Icons.Default.Settings, contentDescription = "Settings")
                 }
             }
         }
     ) { padding ->
-                    val currentUrl by com.antigravity.browser.core.TabManager.currentUrl.collectAsState()
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             currentTab?.let { session ->
                 AndroidView(
-                    factory = { ctx ->
-                        GeckoView(ctx).apply {
-                            setSession(session)
-                        }
-                    },
-                    update = { view ->
-                        view.setSession(session)
-                    },
+                    factory = { ctx -> GeckoView(ctx).apply { setSession(session) } },
+                    update = { view -> view.setSession(session) },
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -121,20 +117,20 @@ fun BrowserScreen() {
     }
 
     if (showAiOverlay) {
-        currentTab?.let { session ->
-            AIOverlay(
-                onDismiss = { showAiOverlay = false },
-                onExecuteScript = { code -> session.evaluateJavascript(code, null) }
-            )
-        }
+        AIOverlay(onDismiss = { showAiOverlay = false }, onExecuteScript = { code ->
+            currentTab?.evaluateJavascript(code, null)
+        })
     }
-    
+
     if (showSettings) {
-        SettingsDialog(onDismiss = { showSettings = false })
+        SettingsDialog(onDismiss = { showSettings = false }, onShowJsInjector = { showJsInjector = true })
     }
-    
+
+    if (showJsInjector) {
+        JavaScriptInjectorDialog(session = currentTab, onDismiss = { showJsInjector = false })
+    }
+
     if (showTabs) {
-        // Simple Tab Switcher Dialog
         AlertDialog(
             onDismissRequest = { showTabs = false },
             title = { Text("Tabs") },
@@ -145,24 +141,19 @@ fun BrowserScreen() {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable {
-                                    com.antigravity.browser.core.TabManager.switchToTab(session)
-                                    showTabs = false
-                                }
+                                .clickable { TabManager.switchToTab(session); showTabs = false }
                                 .padding(8.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text("Tab ${index + 1}")
-                            IconButton(onClick = { com.antigravity.browser.core.TabManager.closeTab(session) }) {
+                            IconButton(onClick = { TabManager.closeTab(session) }) {
                                 Icon(androidx.compose.material.icons.Icons.Default.Close, "Close")
                             }
                         }
                     }
                 }
             },
-            confirmButton = {
-                TextButton(onClick = { showTabs = false }) { Text("Close") }
-            }
+            confirmButton = { TextButton(onClick = { showTabs = false }) { Text("Close") } }
         )
     }
 }
@@ -177,11 +168,9 @@ fun AIOverlay(onDismiss: () -> Unit, onExecuteScript: (String) -> Unit) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Gemini AI", style = MaterialTheme.typography.headlineSmall)
-            
-            LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth().heightIn(max = 200.dp)) {
                 item { Text(response) }
             }
-            
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextField(
                     value = prompt,
@@ -192,33 +181,24 @@ fun AIOverlay(onDismiss: () -> Unit, onExecuteScript: (String) -> Unit) {
                 IconButton(onClick = {
                     scope.launch {
                         isLoading = true
-                        // Simple intent matching for demo
                         if (prompt.contains("install ublock", ignoreCase = true)) {
                             try {
-                                GeckoEngine.getExtensionManager().installExtension(com.antigravity.browser.core.ExtensionManager.UBLOCK_ORIGIN_URL)
+                                GeckoEngine.getExtensionManager().installExtension(ExtensionManager.UBLOCK_ORIGIN_URL)
                                 response = "Installing uBlock Origin..."
                             } catch (e: Exception) {
-                                response = "Error installing extension: ${e.message}"
+                                response = "Error: ${e.message}"
                             }
                         } else if (prompt.contains("scroll down", ignoreCase = true)) {
                             onExecuteScript("window.scrollBy(0, 500);")
                             response = "Scrolling down..."
-                        } else if (prompt.contains("use pro", ignoreCase = true) || prompt.contains("switch to pro", ignoreCase = true)) {
-                            com.antigravity.browser.data.GeminiRepository.setActiveModel(com.antigravity.browser.data.GeminiRepository.MODEL_PRO)
-                            response = "Switched to Gemini 2.5 Pro until restart or further instruction."
-                        } else if (prompt.contains("use flash", ignoreCase = true) || prompt.contains("switch to flash", ignoreCase = true)) {
-                            com.antigravity.browser.data.GeminiRepository.setActiveModel(com.antigravity.browser.data.GeminiRepository.MODEL_FLASH)
-                            response = "Switched to Gemini 2.5 Flash."
-                        } else if (prompt.startsWith("add api key ", ignoreCase = true)) {
-                            val key = prompt.substringAfter("add api key ").trim()
-                            if (key.isNotBlank()) {
-                                com.antigravity.browser.data.GeminiRepository.addApiKey(key)
-                                response = "Added API Key"
-                            } else {
-                                response = "No API key provided"
-                            }
+                        } else if (prompt.contains("use pro", ignoreCase = true)) {
+                            GeminiRepository.setActiveModel(GeminiRepository.MODEL_PRO)
+                            response = "Switched to Gemini Pro"
+                        } else if (prompt.contains("use flash", ignoreCase = true)) {
+                            GeminiRepository.setActiveModel(GeminiRepository.MODEL_FLASH)
+                            response = "Switched to Gemini Flash"
                         } else {
-                            response = com.antigravity.browser.data.GeminiRepository.generateContent(prompt)
+                            response = GeminiRepository.generateContent(prompt)
                         }
                         isLoading = false
                         prompt = ""
@@ -233,73 +213,43 @@ fun AIOverlay(onDismiss: () -> Unit, onExecuteScript: (String) -> Unit) {
 }
 
 @Composable
-fun SettingsDialog(onDismiss: () -> Unit) {
+fun SettingsDialog(onDismiss: () -> Unit, onShowJsInjector: () -> Unit) {
     var apiKey by remember { mutableStateOf("") }
-    val currentKey = com.antigravity.browser.data.GeminiRepository.getCurrentKey() ?: "None"
+    val currentKey = GeminiRepository.getCurrentKey() ?: "None"
+    val keys by GeminiRepository.apiKeys.collectAsState()
     var showExtensionEditor by remember { mutableStateOf(false) }
-    val keys by com.antigravity.browser.data.GeminiRepository.apiKeys.collectAsState()
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Settings") },
         text = {
-            Column {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Text("Current API Key: ${currentKey.take(8)}...")
                 Spacer(modifier = Modifier.height(8.dp))
-                TextField(
-                    value = apiKey,
-                    onValueChange = { apiKey = it },
-                    label = { Text("Add API Key") }
-                )
+                TextField(value = apiKey, onValueChange = { apiKey = it }, label = { Text("Add API Key") })
                 Spacer(modifier = Modifier.height(8.dp))
                 if (keys.isNotEmpty()) {
-                    Text("Saved Keys")
-                    keys.forEachIndexed { idx, key ->
+                    Text("Saved Keys (${keys.size}/4)")
+                    keys.forEach { key ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(key.take(8) + "...", modifier = Modifier.weight(1f))
-                            TextButton(onClick = { com.antigravity.browser.data.GeminiRepository.rotateKey(isError = false) }) { Text("Set Active") }
-                            TextButton(onClick = { com.antigravity.browser.data.GeminiRepository.removeApiKey(key) }) { Text("Delete") }
+                            TextButton(onClick = { GeminiRepository.removeApiKey(key) }) { Text("Delete") }
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = {
-                    val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO)
-                    scope.launch {
-                        GeckoEngine.getExtensionManager().installExtension(com.antigravity.browser.core.ExtensionManager.UBLOCK_ORIGIN_URL)
-                    }
-                }) {
-                    Text("Install uBlock Origin Manually")
-                }
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(onClick = {
-                    showExtensionEditor = true
-                }) {
-                    Text("Open Extension Editor")
-                }
+                Button(onClick = onShowJsInjector) { Text("JavaScript Injector") }
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(onClick = {
-                    val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO)
-                    scope.launch {
-                        val ok = com.antigravity.browser.core.AdBlocker.loadFilterListFromUrl("https://easylist.to/easylist/easylist.txt")
-                        // This is a simple way to notify user — in production use better feedback
-                    }
-                }) {
-                    Text("Load EasyList Filters")
-                }
+                Button(onClick = { showExtensionEditor = true }) { Text("Extension Editor") }
             }
         },
         confirmButton = {
             TextButton(onClick = {
-                if (apiKey.isNotBlank()) {
-                    com.antigravity.browser.data.GeminiRepository.addApiKey(apiKey)
-                }
+                if (apiKey.isNotBlank()) GeminiRepository.addApiKey(apiKey)
                 onDismiss()
             }) { Text("Save") }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 
     if (showExtensionEditor) {
