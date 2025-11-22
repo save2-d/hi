@@ -34,11 +34,16 @@ class MainActivity : ComponentActivity() {
         }
     }
     
-    override fun onBackPressed() {
-        if (viewModel.canGoBack.value) {
-            viewModel.goBack()
-        } else {
-            super.onBackPressed()
-        }
+        // Handle back press
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (viewModel.canGoBack.value) {
+                    viewModel.goBack()
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
     }
 }
