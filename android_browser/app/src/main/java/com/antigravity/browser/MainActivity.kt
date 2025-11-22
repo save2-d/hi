@@ -23,13 +23,15 @@ class MainActivity : ComponentActivity() {
         viewModel = ViewModelProvider(this)[BrowserViewModel::class.java]
         
         // Handle back button properly
-        onBackPressedDispatcher.addCallback(this) {
-            if (viewModel.canGoBack.value) {
-                viewModel.goBack()
-            } else {
-                finish()
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (viewModel.canGoBack.value) {
+                    viewModel.goBack()
+                } else {
+                    finish()
+                }
             }
-        }
+        })
         
         setContent {
             AndroidBrowserTheme {
