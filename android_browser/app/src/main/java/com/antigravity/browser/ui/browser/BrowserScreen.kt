@@ -32,6 +32,7 @@ fun BrowserScreen(
     val context = LocalContext.current
     val apiKeyManager = viewModel.apiKeyManager
     val scope = rememberCoroutineScope()
+    val activeSession by viewModel.activeSession.collectAsState()
     
     var currentScreen by remember { mutableStateOf(ScreenState.BROWSER) }
     var showMenu by remember { mutableStateOf(false) }
@@ -102,11 +103,11 @@ fun BrowserScreen(
                             }
                         },
                         update = { geckoView ->
-                            val session = viewModel.activeSession.value
-                            android.util.Log.d("BrowserScreen", "AndroidView update: session=$session, geckoView.session=${geckoView.session}")
-                            if (session != null && geckoView.session != session) {
-                                geckoView.setSession(session)
-                                android.util.Log.d("BrowserScreen", "Set session on GeckoView: $session")
+                            // Use the observed state 'activeSession' to trigger recomposition/update
+                            android.util.Log.d("BrowserScreen", "AndroidView update: activeSession=$activeSession, geckoView.session=${geckoView.session}")
+                            if (activeSession != null && geckoView.session != activeSession) {
+                                geckoView.setSession(activeSession!!)
+                                android.util.Log.d("BrowserScreen", "Set session on GeckoView: $activeSession")
                             }
                         },
                         modifier = Modifier.fillMaxSize()
