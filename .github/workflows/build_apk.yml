@@ -3,6 +3,9 @@ name: 'Any branch: Build APK'
 
 # Controls when the action will run. Triggers the workflow on pull request events or manual trigger
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - kiwi
