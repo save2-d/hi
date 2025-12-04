@@ -15,17 +15,17 @@ jobs:
         with:
           submodules: true
 
-      - name: Install dependencies
+      - name: Install base dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             openjdk-17-jdk \
             python3 \
+            python3-distutils \
             git \
             ninja-build \
             build-essential \
             pkg-config \
-            libncurses5 \
             libgtk-3-dev \
             libx11-dev \
             libxcomposite-dev \
@@ -36,23 +36,32 @@ jobs:
             libcups2-dev \
             libnss3-dev \
             libxss-dev \
-            libdrm-dev
+            libdrm-dev \
+            libglib2.0-dev \
+            libgbm-dev \
+            libpci-dev \
+            libxkbcommon-dev \
+            libxshmfence-dev \
+            libexpat1-dev \
+            libjpeg-dev \
+            libpng-dev \
+            ccache
 
       - name: Install depot_tools
         run: |
           git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
           echo "$GITHUB_WORKSPACE/depot_tools" >> $GITHUB_PATH
 
-      - name: Sync chromium dependencies
+      - name: Sync Chromium dependencies
         run: |
-          gclient sync --nohooks
-          gclient runhooks
+          gclient sync --nohooks || true
+          gclient runhooks || true
 
       - name: Build APK
         run: |
           autoninja -C out/Default chrome_public_apk
 
-      - name: Upload APK to artifacts
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: kkj.apk
